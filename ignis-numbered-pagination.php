@@ -34,6 +34,7 @@ if ( !class_exists('EFW_IGNIS_PAGINATION') ) :
     public function __construct() {
 
       add_action( 'wp_enqueue_scripts', array($this, 'enqueue_scripts'), 9999 );
+      add_filter( 'ignis_pagination_paged_query', array($this, 'paged_portfolio') );
 
     }
 
@@ -56,10 +57,52 @@ if ( !class_exists('EFW_IGNIS_PAGINATION') ) :
     }
 
     /**
+     * Portfolio post type check
+     * @return boolean
+     */
+    function is_portfolio() {
+
+      if ( is_page_template( 'page-templates/template_portfolio.php' ) || is_post_type_archive('jetpack-portfolio') || is_tax( 'jetpack-portfolio-type' ) || is_tax('jetpack-portfolio-tag') ) {
+        return true;
+      }
+
+      return false;
+
+    }
+
+
+    /**
+     * Object query
+     * @return object
+     */
+    function obj_query() {
+      return apply_filters( 'ignis_pagination_query', $GLOBALS['wp_query'] );
+    }
+
+    /**
+     * Navigation
+     * @param string $links Links HTML
+     * @return void
+     */
+     function navigation($links) {
+       ob_start();
+       ?>
+       <nav class="ingnis-numerred-nav navigation paging-navigation" role="navigation">
+           <div class="pagination loop-pagination">
+               <?php echo $links; ?>
+           </div><!-- .pagination -->
+       </nav><!-- .navigation -->
+       <?php
+       $navigation = ob_get_contents(); ob_end_clean();
+       return $navigation;
+     }
+
+    /**
      * Pagination
+     * @param object $query Query object
      * @return string Pagination HTML
      */
-    function pagination() {
+    function pagination($query) {
 
       if( !$this->theme_is('Ignis') ) {
         return;
@@ -67,9 +110,10 @@ if ( !class_exists('EFW_IGNIS_PAGINATION') ) :
 
       // Pagination based on: https://gist.github.com/sudipbd/45cca73a78953b69fdbcd160e6430905
 
-      // Don't print empty markup if there's only one page.
-      if ( $GLOBALS['wp_query']->max_num_pages < 2 ) {
-          return;
+      // Don't print empty markup if there's only one page
+
+      if ( $query->max_num_pages < 2 ) {
+        return;
       }
 
       $paged        = get_query_var( 'paged' ) ? intval( get_query_var( 'paged' ) ) : 1;
@@ -78,7 +122,7 @@ if ( !class_exists('EFW_IGNIS_PAGINATION') ) :
       $url_parts    = explode( '?', $pagenum_link );
 
       if ( isset( $url_parts[1] ) ) {
-          wp_parse_str( $url_parts[1], $query_args );
+        wp_parse_str( $url_parts[1], $query_args );
       }
 
       $pagenum_link = remove_query_arg( array_keys( $query_args ), $pagenum_link );
@@ -89,31 +133,66 @@ if ( !class_exists('EFW_IGNIS_PAGINATION') ) :
 
       // Set up paginated links.
       $links = paginate_links( array(
-          'base'     => $pagenum_link,
-          'format'   => $format,
-          'total'    => $GLOBALS['wp_query']->max_num_pages,
-          'current'  => $paged,
-          'mid_size' => 1,
-          'add_args' => array_map( 'urlencode', $query_args ),
-          'prev_text' => __( '&larr; Previous', 'ignis' ),
-          'next_text' => __( 'Next &rarr;', 'ignis' ),
+        'base'      => $pagenum_link,
+        'format'    => $format,
+        'total'     => $query->max_num_pages,
+        'current'   => apply_filters( 'ignis_pagination_paged_query', $paged ),
+        'mid_size'  => 1,
+        'add_args'  => array_map( 'urlencode', $query_args ),
+        'prev_text' => __( '&larr; Previous', 'ignis' ),
+        'next_text' => __( 'Next &rarr;', 'ignis' ),
       ) );
 
       if ( $links ) :
 
-      ob_start();
-      ?>
-      <nav class="ingnis-numerred-nav navigation paging-navigation" role="navigation">
-          <div class="pagination loop-pagination">
-              <?php echo $links; ?>
-          </div><!-- .pagination -->
-      </nav><!-- .navigation -->
-      <?php
+        return $this->navigation($links);
 
-      $pagination_html = ob_get_contents(); ob_end_clean();
+      endif;
 
-      return $pagination_html;
+    }
 
+    /**
+     * Paged query of portfolio post type
+     * @return int
+     */
+    function paged_portfolio() {
+
+      $paged = get_query_var( 'paged' ) ? intval( get_query_var( 'paged' ) ) : 1;
+
+      if ( $this->is_portfolio() ) {
+
+        if ( get_query_var( 'paged' ) ) :
+          $paged = get_query_var( 'paged' );
+        elseif ( get_query_var( 'page' ) ) :
+          $paged = get_query_var( 'page' );
+        else :
+          $paged = 1;
+        endif;
+
+        return $paged;
+
+      }
+
+      return $paged;
+
+    }
+
+    /**
+     * Portfolio post type query
+     * @return object
+     */
+    function portfolio_post_type_query() {
+
+      $posts_per_page = get_option( 'jetpack_portfolio_posts_per_page', '10' );
+      $args = array(
+        'post_type'      => 'jetpack-portfolio',
+        'posts_per_page' => $posts_per_page,
+        'paged'          => $this->paged_portfolio(),
+      );
+
+      if( (null != $posts_per_page) || !empty($posts_per_page) ) :
+        $project_query = new WP_Query ( $args );
+        return $project_query;
       endif;
 
     }
@@ -139,15 +218,23 @@ if ( !class_exists('EFW_IGNIS_PAGINATION') ) :
                         array ('jquery'),
                         false, true);
 
-      $ignis_pagination = $this->pagination();
+      $query = $this->obj_query();
 
-      if( !$ignis_pagination || empty($ignis_pagination) ) {
-        $ignis_pagination = 'no-pagination';
+      if ( $this->is_portfolio() ) {
+        $query = $this->portfolio_post_type_query();
       }
 
-      wp_localize_script( 'efw-ignis-pagination-script', 'ignis_pagination', $ignis_pagination );
+      if( $query ) :
+        $ignis_pagination = $this->pagination($query);
 
-  		wp_enqueue_script( 'efw-ignis-pagination-script' );
+        if( !$ignis_pagination || empty($ignis_pagination) ) {
+          $ignis_pagination = 'no-pagination';
+        }
+
+        wp_localize_script( 'efw-ignis-pagination-script', 'ignis_pagination', $ignis_pagination );
+
+    		wp_enqueue_script( 'efw-ignis-pagination-script' );
+      endif;
 
     }
 
