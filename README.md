@@ -1,5 +1,5 @@
 # Ignis Numbered Pagination
-Ignis Numbered Pagination plugin: enables numbered pagination on aTheme's Ignis WordPress theme. No settings, just install and activate the plugin.
+Ignis Numbered Pagination plugin: enables numbered pagination on aTheme's [Ignis WordPress theme](https://wordpress.org/themes/ignis/). No settings, just install and activate the plugin.
 
 ## Installation 
 
