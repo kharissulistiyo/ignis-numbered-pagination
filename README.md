@@ -1,13 +1,13 @@
 # Ignis Numbered Pagination
 Ignis Numbered Pagination plugin: enables numbered pagination on aTheme's [Ignis WordPress theme](https://wordpress.org/themes/ignis/). No settings, just install and activate the plugin.
 
-## Installation 
+## Installation
 
 1. Get the [.zip package](https://github.com/kharissulistiyo/ignis-numbered-pagination/archive/main.zip) of this plugin.
 2. Install manually to your WordPress website from **Plugins** menu > **Add New** > Upload.
-3. Activate and the numbered pagination is set instantly, no extra settings required. 
+3. Activate and the numbered pagination is set instantly, no extra settings required.
 
-## Styling 
+## Styling
 
 Copy the CSS code below to your website's **Additional CSS** and make some changes that you need.
 
@@ -43,12 +43,12 @@ Copy the CSS code below to your website's **Additional CSS** and make some chang
 .ingnis-numerred-nav.paging-navigation a:hover {
   background-color: transparent;
 }
-``` 
+```
 
-## Credit 
+## Credit
 
 This plugin is based on [sudipbd's gist](https://gist.github.com/sudipbd/45cca73a78953b69fdbcd160e6430905).
 
-## License 
+## License
 
-GPL v2.0.
+GPL-2.0+
